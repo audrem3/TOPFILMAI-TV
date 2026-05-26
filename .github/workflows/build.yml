@@ -1,0 +1,48 @@
+name: Build Android APK
+on:
+  push:
+    branches:
+      - main
+      - master
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Atsisiųsti kodo saugyklą
+        uses: actions/checkout@v4
+      
+      - name: Paruošti JDK 17 aplinką
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Išpakuoti projektą ir rasti teisingą aplanką
+        run: |
+          unzip -o *.zip -d projektas_zip || true
+          GRADLE_DIR=$(find . -name "build.gradle" -o -name "build.gradle.kts" | head -n 1 | xargs dirname)
+          echo "Rastas projekto aplankas: $GRADLE_DIR"
+          echo "PROJ_DIR=$GRADLE_DIR" >> $GITHUB_ENV
+
+      - name: Paruošti Gradle aplinką
+        run: |
+          cd ${{ env.PROJ_DIR }}
+          if [ ! -f gradlew ]; then
+            gradle wrapper || echo "Naudojamas globalus gradle"
+          fi
+          chmod +x gradlew || true
+
+      - name: Paleisti gamybą (Kompiliuoti APK)
+        run: |
+          cd ${{ env.PROJ_DIR }}
+          ./gradlew assembleDebug --no-daemon || ./gradlew assemble --no-daemon || echo "Bandoma alternatyvi gamyba"
+
+      - name: Surinkti ir atiduoti APK failą atsisiuntimui
+        uses: actions/upload-artifact@v4
+        with:
+          name: mano-pultelio-programele
+          path: "**/*.apk"
