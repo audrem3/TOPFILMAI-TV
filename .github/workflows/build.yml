@@ -12,18 +12,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Atsisiųsti kodo saugyklą
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Paruošti JDK 17 aplinką
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Išpakuoti projektą ir rasti teisingą aplanką
+      - name: Išpakuoti bet kokį ZIP failą saugiai
         run: |
-          unzip -o *.zip -d projektas_zip || true
+          mkdir -o projektas_zip
+          # Surandame bet kokį zip failą, nesvarbu koks jo pavadinimas, ir išpakuojame
+          ZIP_FILE=$(find . -name "*.zip" | head -n 1)
+          echo "Rastas failas: $ZIP_FILE"
+          unzip -o "$ZIP_FILE" -d projektas_zip || true
+          
+          # Surandame kur yra build.gradle failas
           GRADLE_DIR=$(find . -name "build.gradle" -o -name "build.gradle.kts" | head -n 1 | xargs dirname)
           echo "Rastas projekto aplankas: $GRADLE_DIR"
           echo "PROJ_DIR=$GRADLE_DIR" >> $GITHUB_ENV
